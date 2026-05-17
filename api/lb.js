@@ -69,7 +69,7 @@ function fetchLetterboxd(targetUrl, targetPath) {
 }
 
 function makeJinaUrl(targetPath) {
-  return new URL(`https://r.jina.ai/http://http://letterboxd.com${targetPath}`);
+  return new URL(`https://r.jina.ai/http://http://letterboxd.com${targetPath}#`);
 }
 
 export default async function handler(request, response) {
