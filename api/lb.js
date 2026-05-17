@@ -6,8 +6,12 @@ const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 function makeReferer(path) {
-  const pageMatch = path.match(/^\/([^/]+)\/films\/page\/\d+\//);
-  if (pageMatch) return `${LETTERBOXD_ORIGIN}/${pageMatch[1]}/films/`;
+  const pageMatch = path.match(/^\/([^/]+)\/films\/page\/(\d+)\//);
+  if (pageMatch) {
+    const previousPage = Number(pageMatch[2]) - 1;
+    if (previousPage > 1) return `${LETTERBOXD_ORIGIN}/${pageMatch[1]}/films/page/${previousPage}/`;
+    return `${LETTERBOXD_ORIGIN}/${pageMatch[1]}/films/`;
+  }
   return LETTERBOXD_ORIGIN;
 }
 
