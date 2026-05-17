@@ -37,7 +37,7 @@ export default async function handler(request, response) {
       status: upstream.status,
       headers: {
         "Content-Type": upstream.headers.get("content-type") ?? "text/plain; charset=utf-8",
-        "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400",
+        "Cache-Control": upstream.ok ? "s-maxage=3600, stale-while-revalidate=86400" : "no-store",
       },
     });
   } catch {

@@ -33,6 +33,7 @@ const K_FACTOR = 32;
 const DEFAULT_USERNAME = "majorpanicx";
 const initialCoverageTarget = 4;
 const INTRO_KEY = "letterboxd-ranker-intro-seen-v1";
+const LETTERBOXD_PROXY_VERSION = "edge-v2";
 
 let username = localStorage.getItem("letterboxd-ranker-username") ?? "";
 let movies: Movie[] = username ? loadCachedMovies(username) ?? (username === DEFAULT_USERNAME ? defaultMovies : []) : [];
@@ -450,7 +451,7 @@ function restoreJson(file: File) {
 }
 
 async function fetchText(path: string) {
-  const response = await fetch(`/api/lb?path=${encodeURIComponent(path)}`);
+  const response = await fetch(`/api/lb?path=${encodeURIComponent(path)}&v=${LETTERBOXD_PROXY_VERSION}`);
   if (!response.ok) throw new Error(`Letterboxd returned ${response.status}`);
   return response.text();
 }
