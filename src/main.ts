@@ -487,6 +487,33 @@ function parseRssPosters(rss: string, name: string) {
   return posters;
 }
 
+function parseRssMovies(rss: string, name: string) {
+  const parsed: Movie[] = [];
+  const seen = new Set<string>();
+  const itemPattern = /<item>[\s\S]*?<\/item>/g;
+  const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  for (const itemMatch of rss.matchAll(itemPattern)) {
+    const item = itemMatch[0];
+    const link = item.match(new RegExp(`<link>https://letterboxd\\.com/${safeName}/film/([^/]+)/(?:\\d+/)?</link>`));
+    const title = item.match(/<letterboxd:filmTitle>([\s\S]*?)<\/letterboxd:filmTitle>/);
+    const year = item.match(/<letterboxd:filmYear>(\d{4})<\/letterboxd:filmYear>/);
+    const image = item.match(/<img src="([^"]+)"/);
+    if (!link || !title || seen.has(link[1])) continue;
+    seen.add(link[1]);
+    parsed.push({
+      id: decodeHtml(link[1]),
+      title: decodeHtml(title[1]),
+      year: year ? Number(year[1]) : null,
+      slug: decodeHtml(link[1]),
+      letterboxdUrl: `https://letterboxd.com/${name}/film/${decodeHtml(link[1])}/`,
+      posterUrl: image ? decodeHtml(image[1]) : null,
+    });
+  }
+
+  return parsed;
+}
+
 function parseStructuredPoster(html: string) {
   const imageMatch = html.match(/"image":"([^"]+-0-\d+-0-\d+-crop\.jpg\?v=[^"]+)"/);
   return imageMatch ? decodeHtml(imageMatch[1].replaceAll("\\/", "/")) : null;
@@ -523,22 +550,40 @@ async function loadUsername(nextUsername: string) {
   const firstPage = await fetchText(`/${name}/films/`);
   const pageCount = getMaxPage(firstPage);
   const pages = [firstPage];
+  let blockedPages = 0;
   for (let page = 2; page <= pageCount; page += 1) {
     setLoading(`Loading ${name}: page ${page} of ${pageCount}...`);
-    pages.push(await fetchText(`/${name}/films/page/${page}/`));
+    try {
+      pages.push(await fetchText(`/${name}/films/page/${page}/`));
+    } catch {
+      blockedPages = pageCount - page + 1;
+      break;
+    }
   }
 
   let rssPosters = new Map<string, string>();
+  let rssMovies: Movie[] = [];
   try {
-    rssPosters = parseRssPosters(await fetchText(`/${name}/rss/`), name);
+    const rss = await fetchText(`/${name}/rss/`);
+    rssPosters = parseRssPosters(rss, name);
+    rssMovies = parseRssMovies(rss, name);
   } catch {
     rssPosters = new Map();
+    rssMovies = [];
   }
 
   const byId = new Map<string, Movie>();
   for (const page of pages) {
     for (const movie of parseMovies(page, name)) {
       if (!byId.has(movie.id)) byId.set(movie.id, movie);
+    }
+  }
+  for (const movie of rssMovies) {
+    const existing = byId.get(movie.id);
+    if (existing) {
+      if (!existing.posterUrl) existing.posterUrl = movie.posterUrl;
+    } else {
+      byId.set(movie.id, movie);
     }
   }
 
@@ -560,6 +605,9 @@ async function loadUsername(nextUsername: string) {
   state = loadState();
   saveState();
   render();
+  if (blockedPages > 0) {
+    setLoading(`Loaded ${movies.length} films. Letterboxd blocked ${blockedPages} older page${blockedPages === 1 ? "" : "s"} on this host.`);
+  }
   fillPostersInBackground();
 }
 
