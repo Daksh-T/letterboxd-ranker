@@ -210,6 +210,21 @@ function currentMovies() {
   return { pair, left, right };
 }
 
+function ensurePairShell() {
+  const area = $("#pair-area");
+  if (document.querySelector("#left-card") && document.querySelector("#right-card")) return;
+  area.innerHTML = `
+    <article id="left-card" class="movie-card"></article>
+    <div class="middle-controls">
+      <button id="draw" type="button">Tie / unsure (D)</button>
+      <button id="skip" type="button">Skip for later (S)</button>
+      <button id="undo" type="button">Undo (U)</button>
+    </div>
+    <article id="right-card" class="movie-card"></article>
+  `;
+  wirePairControls();
+}
+
 function selectNextPair(
   ratings: Record<string, Rating>,
   comparisons: Record<string, number>,
@@ -550,15 +565,9 @@ async function loadUsername(nextUsername: string) {
   const firstPage = await fetchText(`/${name}/films/`);
   const pageCount = getMaxPage(firstPage);
   const pages = [firstPage];
-  let blockedPages = 0;
   for (let page = 2; page <= pageCount; page += 1) {
     setLoading(`Loading ${name}: page ${page} of ${pageCount}...`);
-    try {
-      pages.push(await fetchText(`/${name}/films/page/${page}/`));
-    } catch {
-      blockedPages = pageCount - page + 1;
-      break;
-    }
+    pages.push(await fetchText(`/${name}/films/page/${page}/`));
   }
 
   let rssPosters = new Map<string, string>();
@@ -605,9 +614,6 @@ async function loadUsername(nextUsername: string) {
   state = loadState();
   saveState();
   render();
-  if (blockedPages > 0) {
-    setLoading(`Loaded ${movies.length} films. Letterboxd blocked ${blockedPages} older page${blockedPages === 1 ? "" : "s"} on this host.`);
-  }
   fillPostersInBackground();
 }
 
@@ -662,11 +668,22 @@ function render() {
     return;
   }
 
+  ensurePairShell();
   renderMovieCard($("#left-card"), current.left, "left");
   renderMovieCard($("#right-card"), current.right, "right");
   $(".choose-left").addEventListener("click", () => vote(current.left.id, current.right.id));
   $(".choose-right").addEventListener("click", () => vote(current.right.id, current.left.id));
   renderLeaderboard();
+}
+
+function wirePairControls() {
+  $("#skip").addEventListener("click", skipPair);
+  $("#undo").addEventListener("click", undo);
+  $("#draw").addEventListener("click", () => {
+    const current = currentMovies();
+    if (!current) return;
+    vote(current.left.id, current.right.id, true);
+  });
 }
 
 function wireEvents() {
@@ -678,14 +695,8 @@ function wireEvents() {
       setLoading(error instanceof Error ? error.message : "Could not load account");
     }
   });
-  $("#skip").addEventListener("click", skipPair);
-  $("#undo").addEventListener("click", undo);
   $("#reset").addEventListener("click", reset);
-  $("#draw").addEventListener("click", () => {
-    const current = currentMovies();
-    if (!current) return;
-    vote(current.left.id, current.right.id, true);
-  });
+  wirePairControls();
   $("#backup").addEventListener("click", openBackupDialog);
   $("#backup-export").addEventListener("click", () => {
     exportJson();
