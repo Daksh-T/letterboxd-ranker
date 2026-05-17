@@ -483,6 +483,32 @@ function parseMovies(html: string, name: string) {
     });
   }
 
+  if (!parsed.length) return parseMarkdownMovies(html, name);
+  return parsed;
+}
+
+function parseMarkdownMovies(markdown: string, name: string) {
+  const parsed: Movie[] = [];
+  const seen = new Set<string>();
+  const pattern =
+    /\* +!\[Image \d+:[^\]]*]\(([^)]*)\)\[([^\]]+)]\(http:\/\/letterboxd\.com\/film\/([^/]+)\/\)/g;
+
+  for (const match of markdown.matchAll(pattern)) {
+    const posterUrl = match[1].includes("empty-poster") ? null : match[1].replace("-0-70-0-105-crop", "-0-600-0-900-crop");
+    const { title, year } = stripYear(decodeHtml(match[2]));
+    const slug = decodeHtml(match[3]);
+    if (seen.has(slug)) continue;
+    seen.add(slug);
+    parsed.push({
+      id: slug,
+      title,
+      year,
+      slug,
+      letterboxdUrl: `https://letterboxd.com/${name}/film/${slug}/`,
+      posterUrl,
+    });
+  }
+
   return parsed;
 }
 

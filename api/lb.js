@@ -64,6 +64,10 @@ function fetchLetterboxd(targetUrl, targetPath) {
   });
 }
 
+function makeJinaUrl(targetPath) {
+  return new URL(`https://r.jina.ai/http://http://letterboxd.com${targetPath}`);
+}
+
 export default async function handler(request, response) {
   const requestUrl = new URL(request.url, `https://${request.headers.host ?? "localhost"}`);
   const rawPath = requestUrl.searchParams.get("path") ?? "";
@@ -71,7 +75,10 @@ export default async function handler(request, response) {
   const targetUrl = new URL(targetPath, LETTERBOXD_ORIGIN);
 
   try {
-    const upstream = await fetchLetterboxd(targetUrl, targetPath);
+    let upstream = await fetchLetterboxd(targetUrl, targetPath);
+    if (upstream.statusCode === 403) {
+      upstream = await fetchLetterboxd(makeJinaUrl(targetPath), targetPath);
+    }
     response.status(upstream.statusCode);
     response.setHeader("Content-Type", upstream.contentType);
     response.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
