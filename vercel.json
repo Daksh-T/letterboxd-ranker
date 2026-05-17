@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/lb/:path*",
-      "destination": "/api/lb?path=:path*"
-    }
-  ]
-}

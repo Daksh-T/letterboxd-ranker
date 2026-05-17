@@ -71,7 +71,7 @@ bun run preview
 
 Enter a public Letterboxd username and click `Load account`.
 
-The app uses a local Vite proxy (`/lb/...`) to fetch Letterboxd pages, since browsers generally cannot request Letterboxd pages directly from frontend JavaScript due to CORS restrictions.
+The app uses a small proxy endpoint (`/api/lb`) to fetch Letterboxd pages, since browsers generally cannot request Letterboxd pages directly from frontend JavaScript due to CORS restrictions.
 
 Loaded account data is cached in `localStorage`, so returning to an account is faster after the first load. Poster data may continue filling in after the movie list appears.
 

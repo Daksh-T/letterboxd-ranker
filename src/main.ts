@@ -435,7 +435,7 @@ function restoreJson(file: File) {
 }
 
 async function fetchText(path: string) {
-  const response = await fetch(`/lb${path}`);
+  const response = await fetch(`/api/lb?path=${encodeURIComponent(path)}`);
   if (!response.ok) throw new Error(`Letterboxd returned ${response.status}`);
   return response.text();
 }
