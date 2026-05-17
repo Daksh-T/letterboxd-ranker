@@ -491,7 +491,7 @@ function parseMarkdownMovies(markdown: string, name: string) {
   const parsed: Movie[] = [];
   const seen = new Set<string>();
   const pattern =
-    /\* +!\[Image \d+:[^\]]*]\(([^)]*)\)\[([^\]]+)]\(http:\/\/letterboxd\.com\/film\/([^/]+)\/\)/g;
+    /\* +!\[Image \d+:[^\]]*]\(([^)]*)\)\[([^\]]+)]\(https?:\/\/letterboxd\.com\/film\/([^/]+)\/\)/g;
 
   for (const match of markdown.matchAll(pattern)) {
     const posterUrl = match[1].includes("empty-poster") ? null : match[1].replace("-0-70-0-105-crop", "-0-600-0-900-crop");
@@ -623,7 +623,7 @@ async function loadUsername(nextUsername: string) {
   }
 
   const loadedMovies = [...byId.values()]
-    .map((movie) => ({ ...movie, posterUrl: rssPosters.get(movie.slug) ?? null }))
+    .map((movie) => ({ ...movie, posterUrl: rssPosters.get(movie.slug) ?? movie.posterUrl ?? null }))
     .sort((a, b) => {
       if (a.year === b.year) return a.title.localeCompare(b.title);
       if (a.year === null) return 1;
